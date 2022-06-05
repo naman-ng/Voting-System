@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract Voting {
+contract Ballot {
     constructor(string memory _ballotOfficialName, string memory _proposal) {
         ballotOfficialAddress = msg.sender;
         ballotOfficialName = _ballotOfficialName;
@@ -29,7 +29,7 @@ contract Voting {
     string public ballotOfficialName;
     string public proposol;
 
-    mapping(uint => vote) private vote;
+    mapping(uint => vote) private votes;
     mapping(address => voter) public voterRegister;
 
     enum State {
@@ -38,7 +38,7 @@ contract Voting {
         Ended
     }
     State public state;
-    
+
     modifier condition(bool _condition) {
         require(_condition);
         _;
@@ -56,7 +56,7 @@ contract Voting {
 
     function addVoter(address _voterAddress, string memory _voterName)
         public
-        inState(State.created)
+        inState(State.Created)
         onlyOfficial
     {
         voter memory v;
@@ -73,7 +73,7 @@ contract Voting {
     function doVote(bool _choice) public inState(State.Voting) returns (bool voted) {
         bool found = false;
 
-        if (voterRegister[msg.sender].voterName.length !=0 && !voterRegister[msg.sender].voted) {
+        if (bytes(voterRegister[msg.sender].voterName).length !=0 && !voterRegister[msg.sender].voted) {
             voterRegister[msg.sender].voted = true;
             vote memory v;
             v.voterAddress = msg.sender;
@@ -81,13 +81,17 @@ contract Voting {
             if (_choice) {
                 countResult++;
             }            
-            vote[totalVotes] = v;
+            votes[totalVotes] = v;
             totalVotes++;
             found = true;
         }
         return found;
     }
 
-    function endVote(){}
+    function endVote()public inState(State.Voting) onlyOfficial {
+        state = State.Ended;
+        finalResult = countResult;
+    }
 
 }
+
